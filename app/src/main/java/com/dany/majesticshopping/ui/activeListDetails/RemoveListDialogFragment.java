@@ -63,9 +63,10 @@ public class RemoveListDialogFragment extends DialogFragment {
     }
 
     private void removeList() {
-        Firebase remove = new Firebase(Constants.ACTIVE_LISTS_LOCATION);
+        //now that we have shopping list items in the database, when we remove the list, we should also remove
+        //the items in it
+        Firebase remove = new Firebase(Constants.ACTIVE_LISTS_LOCATION).child(mListId);
         //remove the value
         remove.removeValue();
     }
-
 }
