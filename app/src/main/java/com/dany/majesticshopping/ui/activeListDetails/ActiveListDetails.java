@@ -169,7 +169,7 @@ public class ActiveListDetails extends BaseActivity {
      */
     public void removeList() {
          /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = RemoveListDialogFragment.newInstance(mShoppingList);
+        DialogFragment dialog = RemoveListDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(getFragmentManager(), "RemoveListDialogFragment");
     }
 

@@ -8,19 +8,23 @@ import android.os.Bundle;
 
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.model.MajesticShoppingList;
+import com.dany.majesticshopping.utils.Constants;
+import com.firebase.client.Firebase;
 
 /**
  * Created by Dany on 5/19/2016.
  */
 public class RemoveListDialogFragment extends DialogFragment {
+    String mListId;
     final static String LOG_TAG = RemoveListDialogFragment.class.getSimpleName();
 
     /**
      * Public static constructor that creates fragment and passes a bundle with data into it when adapter is created
      */
-    public static RemoveListDialogFragment newInstance(MajesticShoppingList shoppingList) {
+    public static RemoveListDialogFragment newInstance(MajesticShoppingList shoppingList, String listId) {
         RemoveListDialogFragment removeListDialogFragment = new RemoveListDialogFragment();
         Bundle bundle = new Bundle();
+        bundle.putString(Constants.KEY_LIST_ID, listId);
         removeListDialogFragment.setArguments(bundle);
         return removeListDialogFragment;
     }
@@ -30,7 +34,9 @@ public class RemoveListDialogFragment extends DialogFragment {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
+        mListId = getArguments().getString(Constants.KEY_LIST_ID);
     }
 
     @Override
@@ -57,7 +63,9 @@ public class RemoveListDialogFragment extends DialogFragment {
     }
 
     private void removeList() {
-        // we are gonna call this metod when the user tries to remove the list
+        Firebase remove = new Firebase(Constants.ACTIVE_LISTS_LOCATION);
+        //remove the value
+        remove.removeValue();
     }
 
 }
