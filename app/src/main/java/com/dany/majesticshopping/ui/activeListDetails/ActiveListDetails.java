@@ -14,12 +14,12 @@ import android.support.v7.widget.Toolbar;
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.ui.BaseActivity;
 import com.dany.majesticshopping.utils.Constants;
-import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.dany.majesticshopping.model.MajesticShoppingList;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
+import com.dany.majesticshopping.model.ListItem;
 
 /**
  * Created by Dany on 5/19/2016.
@@ -27,6 +27,7 @@ import com.firebase.client.ValueEventListener;
 public class ActiveListDetails extends BaseActivity {
     private ListView mListView;
     private MajesticShoppingList mShoppingList;
+    private ListItemAdapter mListItemAdapter;
     private Firebase mDatabaseRef;
     private String mListId;
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
@@ -42,7 +43,11 @@ public class ActiveListDetails extends BaseActivity {
             finish();
             return;
         }
-        mDatabaseRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION).child(mListId);
+        mDatabaseRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mListId);
+        Firebase listItemsRef = new Firebase(Constants.LIST_ITEMS_LOCATION_URL).child(mListId);
+
+        mListItemAdapter = new ListItemAdapter(this, ListItem.class,
+                R.layout.single_active_list_item, listItemsRef);
 
         initializeScreen();
 
@@ -133,6 +138,7 @@ public class ActiveListDetails extends BaseActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mListItemAdapter.cleanup();
     }
 
     private void initializeScreen() {

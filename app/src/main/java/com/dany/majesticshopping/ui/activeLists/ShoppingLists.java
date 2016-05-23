@@ -9,7 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.model.MajesticShoppingList;
@@ -55,7 +54,7 @@ public class ShoppingLists extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_shopping_lists, container, false);
         initializeScreen(rootView);
 
-        Firebase listsReference = new Firebase(Constants.ACTIVE_LISTS_LOCATION);
+        Firebase listsReference = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL);
 
         mListsAdapter = new ActiveListAdapter(getActivity(), MajesticShoppingList.class,
                 R.layout.single_active_list, listsReference);

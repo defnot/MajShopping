@@ -4,28 +4,30 @@ import android.app.Dialog;
 import android.os.Bundle;
 
 import com.dany.majesticshopping.R;
+import com.dany.majesticshopping.model.ListItem;
 import com.dany.majesticshopping.model.MajesticShoppingList;
+import com.dany.majesticshopping.utils.Constants;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebase.client.Firebase;
+import com.firebase.client.ServerValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Dany on 5/19/2016.
  */
 public class AddListItemDialogFragment extends EditListDialogFragment {
 
-    /**
-     * Public static constructor that creates fragment and passes a bundle with data into it when adapter is created
-     */
     public static AddListItemDialogFragment newInstance(MajesticShoppingList shoppingList, String listId) {
         AddListItemDialogFragment addListItemDialogFragment = new AddListItemDialogFragment();
 
-        Bundle bundle = newInstanceHelper(shoppingList, R.layout.dialog_add_item,listId);
+        Bundle bundle = newInstanceHelper(shoppingList, R.layout.dialog_add_item, listId);
         addListItemDialogFragment.setArguments(bundle);
 
         return addListItemDialogFragment;
     }
 
-    /**
-     * Initialize instance variables with data from bundle
-     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,9 +35,6 @@ public class AddListItemDialogFragment extends EditListDialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        /** {@link EditListDialogFragment#createDialogHelper(int)} is a
-         * superclass method that creates the dialog
-         **/
         return super.createDialogHelper(R.string.positive_button_add_list_item);
     }
 
@@ -44,7 +43,35 @@ public class AddListItemDialogFragment extends EditListDialogFragment {
      */
     @Override
     protected void doListEdit() {
-        //this code should add a new item to the list and also update the timestamp of the list
-        //we can make this with one call to the server
+        String mItemName = mEditTextForList.getText().toString();
+
+        if (!mItemName.equals("")) {
+
+            Firebase firebaseRef = new Firebase(Constants.UNIQUE_FIREBASE_URL);
+            Firebase itemsRef = new Firebase(Constants.LIST_ITEMS_LOCATION_URL).child(mListId);
+
+            HashMap<String, Object> updatedItemToAddMap = new HashMap<String, Object>();
+
+            Firebase newRef = itemsRef.push();
+            String itemId = newRef.getKey();
+
+            ListItem itemToAddObject = new ListItem(mItemName);
+            HashMap<String, Object> itemToAdd =
+                    (HashMap<String, Object>) new ObjectMapper().convertValue(itemToAddObject, Map.class);
+
+            updatedItemToAddMap.put("/" + Constants.LIST_ITEMS_LOCATION + "/"
+                    + mListId + "/" + itemId, itemToAdd);
+
+            HashMap<String, Object> changedTimestampMap = new HashMap<>();
+            changedTimestampMap.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
+
+            updatedItemToAddMap.put("/" + Constants.ACTIVE_LISTS_LOCATION +
+                    "/" + mListId + "/" + Constants.FIREBASE_PROPERTY_TIMESTAMP_LAST_CHANGED, changedTimestampMap);
+
+            firebaseRef.updateChildren(updatedItemToAddMap);
+
+
+            AddListItemDialogFragment.this.getDialog().cancel();
+        }
     }
 }

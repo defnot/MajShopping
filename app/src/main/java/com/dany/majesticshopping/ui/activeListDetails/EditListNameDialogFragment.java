@@ -11,7 +11,6 @@ import com.firebase.client.Firebase;
 import com.firebase.client.ServerValue;
 
 import java.util.HashMap;
-import java.util.Objects;
 
 /**
  * Created by Dany on 5/19/2016.
@@ -62,7 +61,7 @@ public class EditListNameDialogFragment extends EditListDialogFragment {
                 if (mListName != null && mListId != null) {
                     if (!inputList.equals(mListName)) {
                         Log.e("ifgo","we go in da if");
-                        Firebase ref = new Firebase(Constants.ACTIVE_LISTS_LOCATION).child(mListId);
+                        Firebase ref = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mListId);
 
                         HashMap<String, Object> updatedProperty = new HashMap<>();
                         updatedProperty.put(Constants.FIREBASE_PROPERTY_LIST_NAME, inputList);

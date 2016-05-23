@@ -5,11 +5,15 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.model.MajesticShoppingList;
 import com.dany.majesticshopping.utils.Constants;
 import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
+
+import java.util.HashMap;
 
 /**
  * Created by Dany on 5/19/2016.
@@ -63,10 +67,23 @@ public class RemoveListDialogFragment extends DialogFragment {
     }
 
     private void removeList() {
-        //now that we have shopping list items in the database, when we remove the list, we should also remove
-        //the items in it
-        Firebase remove = new Firebase(Constants.ACTIVE_LISTS_LOCATION).child(mListId);
-        //remove the value
-        remove.removeValue();
+        HashMap<String, Object> removeListData = new HashMap<String, Object>();
+
+        removeListData.put("/" + Constants.ACTIVE_LISTS_LOCATION + "/"
+                + mListId, null);
+        removeListData.put("/" + Constants.LIST_ITEMS_LOCATION + "/"
+                + mListId, null);
+
+        Firebase firebaseRef = new Firebase(Constants.UNIQUE_FIREBASE_URL);
+
+        firebaseRef.updateChildren(removeListData, new Firebase.CompletionListener() {
+            @Override
+            public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+
+                if (firebaseError != null) {
+                    Log.e(LOG_TAG, getString(R.string.log_error_updating_data) + firebaseError.getMessage());
+                }
+            }
+        });
     }
 }
