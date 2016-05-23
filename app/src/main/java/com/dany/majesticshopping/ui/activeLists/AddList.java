@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAssignedNumbers;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -87,6 +88,7 @@ public class AddList extends DialogFragment {
 
         MajesticShoppingList currList = new MajesticShoppingList(name, owner);
         if(!name.equals("")) {
+            Log.e("added some stuff", "yep i just did");
             Firebase listRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION);
             Firebase newListRef = listRef.push();
 

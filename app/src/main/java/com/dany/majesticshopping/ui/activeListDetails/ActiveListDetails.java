@@ -29,7 +29,7 @@ public class ActiveListDetails extends BaseActivity {
     private MajesticShoppingList mShoppingList;
     private Firebase mDatabaseRef;
     private String mListId;
-
+    private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {

@@ -57,7 +57,7 @@ public class RemoveListDialogFragment extends DialogFragment {
     }
 
     private void removeList() {
-
+        // we are gonna call this metod when the user tries to remove the list
     }
 
 }

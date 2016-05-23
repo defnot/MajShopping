@@ -2,6 +2,7 @@ package com.dany.majesticshopping.ui.activeListDetails;
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.model.MajesticShoppingList;
@@ -52,13 +53,15 @@ public class EditListNameDialogFragment extends EditListDialogFragment {
     /**
      * Changes the list name in all copies of the current list
      */
+    @Override
     protected void doListEdit() {
         final String inputList = mEditTextForList.getText().toString();
-
+        Log.e("editgo","we go in da edit");
         if (!inputList.equals("")) {
 
                 if (mListName != null && mListId != null) {
                     if (!inputList.equals(mListName)) {
+                        Log.e("ifgo","we go in da if");
                         Firebase ref = new Firebase(Constants.ACTIVE_LISTS_LOCATION).child(mListId);
 
                         HashMap<String, Object> updatedProperty = new HashMap<>();

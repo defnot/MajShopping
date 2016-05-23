@@ -46,8 +46,8 @@ public abstract class EditListDialogFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mResource = getArguments().getInt(Constants.KEY_LAYOUT_RESOURCE);
         mListId = getArguments().getString(Constants.KEY_LIST_ID);
+        mResource = getArguments().getInt(Constants.KEY_LAYOUT_RESOURCE);
     }
 
     /**
