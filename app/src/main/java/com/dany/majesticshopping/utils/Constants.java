@@ -12,6 +12,10 @@ public final class Constants {
     public static final String LIST_NAME = "listName";
     public static final String FIREBASE_PROPERTY_TIMESTAMP = "timestamp";
 
+    public static final String FIREBASE_PROPERTY_ITEM_NAME = "itemName";
+    public static final String KEY_LIST_ITEM_NAME = "ITEM_NAME";
+    public static final String KEY_LIST_ITEM_ID = "LIST_ITEM_ID";
+
     public static final String ACTIVE_LISTS_LOCATION = "activeLists";
     public static final String LIST_ITEMS_LOCATION = "shoppingListItems";
 
