@@ -28,8 +28,9 @@ public class ActiveListDetails extends BaseActivity {
     private ListView mListView;
     private MajesticShoppingList mShoppingList;
     private ListItemAdapter mListItemAdapter;
-    private Firebase mDatabaseRef;
+    private Firebase mListRef;
     private String mListId;
+    private ValueEventListener mActiveListRefListener;
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
 
     @Override
@@ -43,7 +44,7 @@ public class ActiveListDetails extends BaseActivity {
             finish();
             return;
         }
-        mDatabaseRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mListId);
+        mListRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mListId);
         Firebase listItemsRef = new Firebase(Constants.LIST_ITEMS_LOCATION_URL).child(mListId);
 
         mListItemAdapter = new ListItemAdapter(this, ListItem.class,
@@ -51,7 +52,7 @@ public class ActiveListDetails extends BaseActivity {
 
         initializeScreen();
 
-        mDatabaseRef.addValueEventListener(new ValueEventListener() {
+        mActiveListRefListener = mListRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 MajesticShoppingList shoppingList = dataSnapshot.getValue(MajesticShoppingList.class);
@@ -139,76 +140,47 @@ public class ActiveListDetails extends BaseActivity {
     public void onDestroy() {
         super.onDestroy();
         mListItemAdapter.cleanup();
+        mListRef.removeEventListener(mActiveListRefListener);
     }
 
     private void initializeScreen() {
         mListView = (ListView) findViewById(R.id.list_view_shopping_list_items);
         Toolbar toolbar = (Toolbar) findViewById(R.id.app_bar);
-         /* Common toolbar setup */
         setSupportActionBar(toolbar);
-         /* Add back button to the action bar */
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-         /* Inflate the footer, set root layout to null*/
         View footer = getLayoutInflater().inflate(R.layout.footer_empty, null);
         mListView.addFooterView(footer);
     }
 
 
-    /**
-     * Archive current list when user selects "Archive" menu item
-     */
     public void archiveList() {
     }
 
-
-    /**
-     * Start AddItemsFromMealActivity to add meal ingredients into the shopping list
-     * when the user taps on "add meal" fab
-     */
     public void addMeal(View view) {
     }
 
-    /**
-     * Remove current shopping list and its items from all nodes
-     */
     public void removeList() {
-         /* Create an instance of the dialog fragment and show it */
         DialogFragment dialog = RemoveListDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(getFragmentManager(), "RemoveListDialogFragment");
     }
 
-    /**
-     * Show the add list item dialog when user taps "Add list item" fab
-     */
     public void showAddListItemDialog(View view) {
-         /* Create an instance of the dialog fragment and show it */
         DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList,mListId);
         dialog.show(getFragmentManager(), "AddListItemDialogFragment");
     }
 
-    /**
-     * Show edit list name dialog when user selects "Edit list name" menu item
-     */
     public void showEditListNameDialog() {
-         /* Create an instance of the dialog fragment and show it */
         DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(this.getFragmentManager(), "EditListNameDialogFragment");
     }
 
-    /**
-     * Show the edit list item name dialog after longClick on the particular item
-     */
     public void showEditListItemNameDialog() {
-         /* Create an instance of the dialog fragment and show it */
         DialogFragment dialog = EditListItemNameDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(this.getFragmentManager(), "EditListItemNameDialogFragment");
     }
 
-    /**
-     * This method is called when user taps "Start/Stop shopping" button
-     */
     public void toggleShopping(View view) {
 
     }
