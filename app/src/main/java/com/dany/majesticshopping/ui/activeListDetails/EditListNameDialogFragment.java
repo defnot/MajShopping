@@ -17,7 +17,7 @@ import java.util.HashMap;
  */
 public class EditListNameDialogFragment extends EditListDialogFragment {
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
-    private String mListName;
+    String mListName;
 
     public static EditListItemNameDialogFragment newInstance(MajesticShoppingList shoppingList, String listId) {
         EditListItemNameDialogFragment editListItemNameDialogFragment = new EditListItemNameDialogFragment();
@@ -33,25 +33,19 @@ public class EditListNameDialogFragment extends EditListDialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         mListName = getArguments().getString(Constants.KEY_LIST_NAME);
+
     }
 
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
-        /** {@link EditListDialogFragment#createDialogHelper(int)} is a
-         * superclass method that creates the dialog
-         **/
         Dialog dialog = super.createDialogHelper(R.string.positive_button_edit_item);
         helpSetDefaultValueEditText(mListName);
         return dialog;
     }
 
-    /**
-     * Changes the list name in all copies of the current list
-     */
     @Override
     protected void doListEdit() {
         final String inputList = mEditTextForList.getText().toString();

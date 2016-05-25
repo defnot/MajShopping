@@ -7,6 +7,8 @@ public class ListItem {
     private String name;
     private String owner;
 
+    public ListItem() {}
+
     public ListItem(String name) {
         this.name = name;
         this.owner = "Anonymous owner";
