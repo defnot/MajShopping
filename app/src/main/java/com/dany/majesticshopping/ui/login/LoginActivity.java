@@ -41,12 +41,9 @@ public class LoginActivity extends BaseActivity {
     private ProgressDialog mAuthProgressDialog;
     private EditText mEditTextEmailInput, mEditTextPasswordInput;
 
-    /**
-     * Variables related to Google Login
-     */
-    /* A flag indicating that a PendingIntent is in progress and prevents us from starting further intents. */
+
     private boolean mGoogleIntentInProgress;
-    /* Request code used to invoke sign in user interactions for Google+ */
+
     public static final int RC_GOOGLE_LOGIN = 1;
     /* A Google account object that is populated if the user signs in with Google */
     GoogleSignInAccount mGoogleAccount;
