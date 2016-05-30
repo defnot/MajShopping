@@ -17,7 +17,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dany.majesticshopping.ui.MainActivity;
+import com.dany.majesticshopping.utils.Constants;
 import com.firebase.client.AuthData;
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
@@ -41,6 +45,7 @@ public class LoginActivity extends BaseActivity {
     private ProgressDialog mAuthProgressDialog;
     private EditText mEditTextEmailInput, mEditTextPasswordInput;
 
+    private Firebase mFirebaseRef;
 
     private boolean mGoogleIntentInProgress;
 
@@ -53,6 +58,7 @@ public class LoginActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        mFirebaseRef = new Firebase(Constants.UNIQUE_FIREBASE_URL);
         /**
          * Link layout elements from XML and setup progress dialog
          */
@@ -130,38 +136,88 @@ public class LoginActivity extends BaseActivity {
      * Sign in with Password provider (used when user taps "Done" action on keyboard)
      */
     public void signInPassword() {
+        String email = mEditTextEmailInput.getText().toString();
+        String password = mEditTextPasswordInput.getText().toString();
+
+        if(email.equals("")) {
+            mEditTextEmailInput.setError(getString(R.string.error_cannot_be_empty));
+            return;
+        }
+
+        if(password.equals("")) {
+            mEditTextPasswordInput.setError(getString(R.string.error_cannot_be_empty));
+            return;
+        }
+        mAuthProgressDialog.show();
+        mFirebaseRef.authWithPassword(email, password, new MyAuthResultHandler("password"));
     }
 
-    /**
-     * Helper method that makes sure a user is created if the user
-     * logs in with Firebase's email/password provider.
-     * @param authData AuthData object returned from onAuthenticated
-     */
+
+    private class MyAuthResultHandler implements Firebase.AuthResultHandler {
+
+        private final String provider;
+
+        public MyAuthResultHandler(String provider) {
+            this.provider = provider;
+        }
+
+        /**
+         * On successful authentication call setAuthenticatedUser if it was not already
+         * called in
+         */
+        @Override
+        public void onAuthenticated(AuthData authData) {
+            mAuthProgressDialog.dismiss();
+            Log.i(LOG_TAG, provider + " " + getString(R.string.log_message_auth_successful));
+            if (authData != null) {
+                /* Go to main activity */
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+        }
+
+        @Override
+        public void onAuthenticationError(FirebaseError firebaseError) {
+            mAuthProgressDialog.dismiss();
+
+            /**
+             * Use utility method to check the network connection state
+             * Show "No network connection" if there is no connection
+             * Show Firebase specific error message otherwise
+             */
+            switch (firebaseError.getCode()) {
+                case FirebaseError.INVALID_EMAIL:
+                case FirebaseError.USER_DOES_NOT_EXIST:
+                    mEditTextEmailInput.setError(getString(R.string.error_message_email_issue));
+                    break;
+                case FirebaseError.INVALID_PASSWORD:
+                    mEditTextPasswordInput.setError(firebaseError.getMessage());
+                    break;
+                case FirebaseError.NETWORK_ERROR:
+                    showErrorToast(getString(R.string.error_message_failed_sign_in_no_network));
+                    break;
+                default:
+                    showErrorToast(firebaseError.toString());
+            }
+        }
+    }
     private void setAuthenticatedUserPasswordProvider(AuthData authData) {
     }
 
-    /**
-     * Helper method that makes sure a user is created if the user
-     * logs in with Firebase's Google login provider.
-     * @param authData AuthData object returned from onAuthenticated
-     */
     private void setAuthenticatedUserGoogle(AuthData authData){
 
     }
 
-    /**
-     * Show error toast to users
-     */
+
     private void showErrorToast(String message) {
         Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
     }
 
 
-    /**
-     * Signs you into ShoppingList++ using the Google Login Provider
-     * @param token A Google OAuth access token returned from Google
-     */
     private void loginWithGoogle(String token) {
+        mFirebaseRef.authWithOAuthToken("google", token, new MyAuthResultHandler("google"));
     }
 
     /**
