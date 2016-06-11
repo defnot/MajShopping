@@ -19,11 +19,11 @@ public class EditListNameDialogFragment extends EditListDialogFragment {
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
     String mListName;
 
-    public static EditListItemNameDialogFragment newInstance(MajesticShoppingList shoppingList, String listId) {
+    public static EditListItemNameDialogFragment newInstance(MajesticShoppingList shoppingList, String listId, String encodedEmail) {
         EditListItemNameDialogFragment editListItemNameDialogFragment = new EditListItemNameDialogFragment();
 
         Bundle bundle = EditListDialogFragment.newInstanceHelper(shoppingList,
-                R.layout.dialog_edit_item, listId);
+                R.layout.dialog_edit_item, listId, encodedEmail);
         editListItemNameDialogFragment.setArguments(bundle);
 
         return editListItemNameDialogFragment;

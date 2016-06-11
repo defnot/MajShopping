@@ -5,8 +5,10 @@ package com.dany.majesticshopping.ui.login;
  */
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -17,11 +19,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dany.majesticshopping.model.User;
 import com.dany.majesticshopping.ui.MainActivity;
 import com.dany.majesticshopping.utils.Constants;
+import com.dany.majesticshopping.utils.Utils;
 import com.firebase.client.AuthData;
+import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
+import com.firebase.client.ServerValue;
+import com.firebase.client.ValueEventListener;
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
@@ -37,6 +44,7 @@ import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.ui.BaseActivity;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 public class LoginActivity extends BaseActivity {
 
@@ -169,12 +177,34 @@ public class LoginActivity extends BaseActivity {
         public void onAuthenticated(AuthData authData) {
             mAuthProgressDialog.dismiss();
             Log.i(LOG_TAG, provider + " " + getString(R.string.log_message_auth_successful));
-            if (authData != null) {
-                /* Go to main activity */
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
+
+            if (authData.getProvider().equals("google")) {
+                /**
+                 * If google api client is connected, get the lowerCase user email
+                 * and save in sharedPreferences
+                 */
+                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor spe = sp.edit();
+
+                if(authData.getProvider().equals("password")) {
+                    setAuthenticatedUserPasswordProvider(authData);
+                } else {
+                    if(authData.getProvider().equals("google")) {
+                        setAuthenticatedUserGoogle(authData);
+                    }
+                    else {
+                        Log.e(LOG_TAG, getString(R.string.log_error_invalid_provider) + authData.getProvider());
+                    }
+                    spe.putString(Constants.KEY_PROVIDER, authData.getProvider()).apply();
+                    spe.putString(Constants.KEY_ENCODED_EMAIL, mEncodedEmail).apply();
+
+
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                }
+
             }
         }
 
@@ -204,9 +234,54 @@ public class LoginActivity extends BaseActivity {
         }
     }
     private void setAuthenticatedUserPasswordProvider(AuthData authData) {
+        final String unproccessedEmail = authData.getProviderData().get("email").toString().toLowerCase();
+        mEncodedEmail = Utils.encodeEmail(unproccessedEmail);
     }
 
     private void setAuthenticatedUserGoogle(AuthData authData){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        SharedPreferences.Editor spe = sp.edit();
+        String unprocessedEmail;
+        if (mGoogleApiClient.isConnected()) {
+            unprocessedEmail = mGoogleAccount.getEmail().toLowerCase();
+            spe.putString(Constants.KEY_GOOGLE_EMAIL, unprocessedEmail).apply();
+        } else {
+
+            /**
+             * Otherwise get email from sharedPreferences, use null as default value
+             * (this mean that user resumes his session)
+             */
+            unprocessedEmail = sp.getString(Constants.KEY_GOOGLE_EMAIL, null);
+        }
+        /**
+         * Encode user email replacing "." with "," to be able to use it
+         * as a Firebase db key
+         */
+        mEncodedEmail = Utils.encodeEmail(unprocessedEmail);
+
+            /* Get username from authData */
+        final String userName = (String) authData.getProviderData().get(Constants.PROVIDER_DATA_DISPLAY_NAME);
+
+            /* If no user exists, make a user */
+        final Firebase userLocation = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mEncodedEmail);
+        userLocation.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                    /* If nothing is there ...*/
+                if (dataSnapshot.getValue() == null) {
+                    HashMap<String, Object> timestampJoined = new HashMap<>();
+                    timestampJoined.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
+
+                    User newUser = new User(userName, mEncodedEmail, timestampJoined);
+                    userLocation.setValue(newUser);
+                }
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                Log.d(LOG_TAG, getString(R.string.log_error_occurred) + firebaseError.getMessage());
+            }
+        });
 
     }
 

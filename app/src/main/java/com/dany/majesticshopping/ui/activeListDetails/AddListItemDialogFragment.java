@@ -19,10 +19,10 @@ import java.util.Map;
  */
 public class AddListItemDialogFragment extends EditListDialogFragment {
 
-    public static AddListItemDialogFragment newInstance(MajesticShoppingList shoppingList, String listId) {
+    public static AddListItemDialogFragment newInstance(MajesticShoppingList shoppingList, String listId, String encodedEmail) {
         AddListItemDialogFragment addListItemDialogFragment = new AddListItemDialogFragment();
 
-        Bundle bundle = newInstanceHelper(shoppingList, R.layout.dialog_add_item, listId);
+        Bundle bundle = newInstanceHelper(shoppingList, R.layout.dialog_add_item, listId, encodedEmail);
         addListItemDialogFragment.setArguments(bundle);
 
         return addListItemDialogFragment;
@@ -55,7 +55,7 @@ public class AddListItemDialogFragment extends EditListDialogFragment {
             Firebase newRef = itemsRef.push();
             String itemId = newRef.getKey();
 
-            ListItem itemToAddObject = new ListItem(mItemName);
+            ListItem itemToAddObject = new ListItem(mItemName, mEncodedEmail);
             HashMap<String, Object> itemToAdd =
                     (HashMap<String, Object>) new ObjectMapper().convertValue(itemToAddObject, Map.class);
 

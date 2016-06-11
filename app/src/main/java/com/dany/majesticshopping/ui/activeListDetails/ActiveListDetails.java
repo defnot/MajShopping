@@ -15,6 +15,7 @@ import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.ui.BaseActivity;
 import com.dany.majesticshopping.utils.Constants;
 import com.dany.majesticshopping.model.MajesticShoppingList;
+import com.dany.majesticshopping.utils.Utils;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
@@ -30,6 +31,7 @@ public class ActiveListDetails extends BaseActivity {
     private ListItemAdapter mListItemAdapter;
     private Firebase mListRef;
     private String mListId;
+    private boolean mCurrentUserIsOwner = false;
     private ValueEventListener mActiveListRefListener;
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
 
@@ -64,6 +66,8 @@ public class ActiveListDetails extends BaseActivity {
                 }
                 mShoppingList = shoppingList;
                 mListItemAdapter.setShoppingList(mShoppingList);
+                mCurrentUserIsOwner = Utils.checkIfOwner(shoppingList, mEncodedEmail); //check if this is the current user
+
                 invalidateOptionsMenu();
                 setTitle(shoppingList.getListName());
             }
@@ -108,8 +112,8 @@ public class ActiveListDetails extends BaseActivity {
         MenuItem archive = menu.findItem(R.id.action_archive);
 
          /* Only the edit and remove options are implemented */
-        remove.setVisible(true);
-        edit.setVisible(true);
+        remove.setVisible(mCurrentUserIsOwner);
+        edit.setVisible(mCurrentUserIsOwner);
         share.setVisible(false);
         archive.setVisible(false);
 
@@ -176,17 +180,17 @@ public class ActiveListDetails extends BaseActivity {
     }
 
     public void showAddListItemDialog(View view) {
-        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList,mListId);
+        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList,mListId, mEncodedEmail);
         dialog.show(getFragmentManager(), "AddListItemDialogFragment");
     }
 
     public void showEditListNameDialog() {
-        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId);
+        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId,mEncodedEmail);
         dialog.show(this.getFragmentManager(), "EditListNameDialogFragment");
     }
 
     public void showEditListItemNameDialog(String itemName, String itemId) {
-        DialogFragment dialog = EditListItemNameDialogFragment.newInstance(mShoppingList, mListId,itemId,mListId);
+        DialogFragment dialog = EditListItemNameDialogFragment.newInstance(mShoppingList, mListId,itemId,mListId,mEncodedEmail);
         dialog.show(this.getFragmentManager(), "EditListItemNameDialogFragment");
     }
 

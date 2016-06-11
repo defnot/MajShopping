@@ -28,6 +28,18 @@ public final class Constants {
 
     public static final String ACTIVE_LISTS_LOCATION_RENAME_URL = UNIQUE_FIREBASE_URL + "/" + ACTIVE_LISTS_LOCATION;
     public static final String LIST_ITEMS_LOCATION_URL = UNIQUE_FIREBASE_URL + "/" + LIST_ITEMS_LOCATION;
+    public static final String FIREBASE_URL_USERS = UNIQUE_FIREBASE_URL + "/" + "users";
+
+
+
+    public static final String KEY_PROVIDER = "PROVIDER";
+    public static final String KEY_ENCODED_EMAIL = "ENCODED_EMAIL";
+    public static final String KEY_LIST_OWNER = "LIST_OWNER";
+    public static final String KEY_GOOGLE_EMAIL = "GOOGLE_EMAIL";
+
+    public static final String PASSWORD_PROVIDER = "password";
+    public static final String GOOGLE_PROVIDER = "google";
+    public static final String PROVIDER_DATA_DISPLAY_NAME = "displayName";
 
 
 

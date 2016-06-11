@@ -21,14 +21,17 @@ import com.dany.majesticshopping.utils.Constants;
  * Created by Dany on 5/19/2016.
  */
 public abstract class EditListDialogFragment extends DialogFragment {
-    String mListId;
+    String mListId, mOwner, mEncodedEmail;
     EditText mEditTextForList;
     int mResource;
 
-    protected static Bundle newInstanceHelper(MajesticShoppingList shoppingList, int resource, String listId) {
+    protected static Bundle newInstanceHelper(MajesticShoppingList shoppingList, int resource, String listId, String encodedEmail) {
         Bundle bundle = new Bundle();
         bundle.putString(Constants.KEY_LIST_ID,listId);
         bundle.putInt(Constants.KEY_LAYOUT_RESOURCE, resource);
+
+        bundle.putString(Constants.KEY_LIST_OWNER, shoppingList.getOwner());
+        bundle.putString(Constants.KEY_ENCODED_EMAIL, encodedEmail);
         return bundle;
     }
 
@@ -38,6 +41,8 @@ public abstract class EditListDialogFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         mListId = getArguments().getString(Constants.KEY_LIST_ID);
         mResource = getArguments().getInt(Constants.KEY_LAYOUT_RESOURCE);
+        mOwner = getArguments().getString(Constants.KEY_LIST_OWNER);
+        mEncodedEmail = getArguments().getString(Constants.KEY_ENCODED_EMAIL);
     }
 
     @Override

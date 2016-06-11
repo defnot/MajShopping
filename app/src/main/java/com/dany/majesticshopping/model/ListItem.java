@@ -9,9 +9,9 @@ public class ListItem {
 
     public ListItem() {}
 
-    public ListItem(String name) {
+    public ListItem(String name, String owner) {
         this.name = name;
-        this.owner = "Anonymous owner";
+        this.owner = owner;
     }
 
     public String getName() {

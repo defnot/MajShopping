@@ -26,11 +26,13 @@ import java.util.HashMap;
  * Created by Dany on 5/17/2016.
  */
 public class AddList extends DialogFragment {
+    String mEncodedEmail;
     EditText mEditTextListName;
 
-    public static AddList newInstance() {
+    public static AddList newInstance(String encodedEmail) {
         AddList addList = new AddList();
         Bundle bundle = new Bundle();
+        bundle.putString(Constants.KEY_ENCODED_EMAIL, encodedEmail);
         addList.setArguments(bundle);
         return addList;
     }
@@ -39,6 +41,7 @@ public class AddList extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mEncodedEmail = getArguments().getString(Constants.KEY_ENCODED_EMAIL);
     }
 
     @Override
@@ -82,12 +85,8 @@ public class AddList extends DialogFragment {
     }
     // add new list
     public void addShoppingList() {
-        String name = mEditTextListName.getText().toString();
-        String owner = "Anonymous owner";
-
-        MajesticShoppingList currList = new MajesticShoppingList(name, owner);
-        if(!name.equals("")) {
-            Log.e("added some stuff", "yep i just did");
+        String userEnteredName = mEditTextListName.getText().toString();
+        if(!userEnteredName.equals("")) {
             Firebase listRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL);
             Firebase newListRef = listRef.push();
 
@@ -96,7 +95,7 @@ public class AddList extends DialogFragment {
             HashMap<String, Object> timestampCreated = new HashMap<>();
             timestampCreated.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
 
-            MajesticShoppingList newShoppingList = new MajesticShoppingList(name, owner, timestampCreated);
+            MajesticShoppingList newShoppingList = new MajesticShoppingList(userEnteredName, mEncodedEmail, timestampCreated);
             newListRef.setValue(newShoppingList);
             AddList.this.getDialog().cancel();
         }

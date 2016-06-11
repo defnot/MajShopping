@@ -14,11 +14,17 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.dany.majesticshopping.R;
+import com.dany.majesticshopping.model.User;
 import com.dany.majesticshopping.ui.BaseActivity;
 import com.dany.majesticshopping.utils.Constants;
+import com.dany.majesticshopping.utils.Utils;
+import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
+import com.firebase.client.ServerValue;
+import com.firebase.client.ValueEventListener;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class CreateAccountActivity extends BaseActivity {
@@ -99,6 +105,9 @@ public class CreateAccountActivity extends BaseActivity {
                 /* Dismiss the progress dialog */
                 mAuthProgressDialog.dismiss();
                 Log.i(LOG_TAG, getString(R.string.log_message_auth_successful));
+
+                String uid = (String) result.get("uid");
+                createUserInFirebaseHelper(uid);
             }
 
             @Override
@@ -121,7 +130,29 @@ public class CreateAccountActivity extends BaseActivity {
     /**
      * Creates a new user in Firebase from the Java POJO
      */
-    private void createUserInFirebaseHelper(final String encodedEmail) {
+    private void createUserInFirebaseHelper(String uid) {
+                final Firebase userLocation = new Firebase(Constants.UNIQUE_FIREBASE_URL + "/" + "users").child(uid);
+                final String encodedEmail = Utils.encodeEmail(mUserEmail);
+                userLocation.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+
+                                /* If there is no user, make one */
+                         if (dataSnapshot.getValue() == null) {
+
+                            HashMap<String, Object> timestampJoined = new HashMap<>();
+                                timestampJoined.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
+
+                                        User newUser = new User(mUserName, encodedEmail, timestampJoined);
+                                   userLocation.setValue(newUser);
+                               }
+                       }
+
+                           @Override
+                        public void onCancelled(FirebaseError firebaseError) {
+                                Log.d(LOG_TAG, getString(R.string.log_error_occurred) + firebaseError.getMessage());
+                   }
+           });
     }
 
     private boolean isEmailValid(String email) {

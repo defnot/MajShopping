@@ -2,6 +2,8 @@ package com.dany.majesticshopping.utils;
 
 import android.content.Context;
 
+import com.dany.majesticshopping.model.MajesticShoppingList;
+
 import java.text.SimpleDateFormat;
 
 public class Utils {
@@ -11,6 +13,15 @@ public class Utils {
 
     public Utils(Context con) {
         mContext = con;
+    }
+
+    public static boolean checkIfOwner(MajesticShoppingList shoppingList, String currentUserEmail) {
+        return (shoppingList.getOwner() != null &&
+                shoppingList.getOwner().equals(currentUserEmail));
+    }
+
+    public static String encodeEmail(String userEmail) {
+        return userEmail.replace(".", ",");
     }
 
 }
