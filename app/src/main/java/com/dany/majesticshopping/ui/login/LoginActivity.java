@@ -87,9 +87,29 @@ public class LoginActivity extends BaseActivity {
         });
     }
 
+
     @Override
     protected void onResume() {
         super.onResume();
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor spe = sp.edit();
+
+        /**
+         * Get the newly registered user email if present, use null as default value
+         */
+        String signupEmail = sp.getString(Constants.KEY_SIGNUP_EMAIL, null);
+
+        /**
+         * Fill in the email editText and remove value from SharedPreferences if email is present
+         */
+        if (signupEmail != null) {
+            mEditTextEmailInput.setText(signupEmail);
+
+            /**
+             * Clear signupEmail sharedPreferences to make sure that they are used just once
+             */
+            spe.putString(Constants.KEY_SIGNUP_EMAIL, null).apply();
+        }
     }
 
     @Override
@@ -234,8 +254,61 @@ public class LoginActivity extends BaseActivity {
         }
     }
     private void setAuthenticatedUserPasswordProvider(AuthData authData) {
-        final String unproccessedEmail = authData.getProviderData().get("email").toString().toLowerCase();
-        mEncodedEmail = Utils.encodeEmail(unproccessedEmail);
+        final String unprocessedEmail = authData.getProviderData().get(Constants.FIREBASE_PROPERTY_EMAIL).toString().toLowerCase();
+        /**
+         * Encode user email replacing "." with ","
+         * to be able to use it as a Firebase db key
+         */
+        mEncodedEmail = Utils.encodeEmail(unprocessedEmail);
+
+        final Firebase userRef = new Firebase(Constants.FIREBASE_URL_USERS).child(mEncodedEmail);
+
+        /**
+         * Check if current user has logged in at least once
+         */
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                User user = dataSnapshot.getValue(User.class);
+
+                if (user != null) {
+
+                    /**
+                     * If recently registered user has hasLoggedInWithPassword = "false"
+                     * (never logged in using password provider)
+                     */
+                    if (!user.isHasLoggedInWithPassword()) {
+
+                        /**
+                         * Change password if user that just signed in signed up recently
+                         * to make sure that user will be able to use temporary password
+                         * from the email more than 24 hours
+                         */
+                        mFirebaseRef.changePassword(unprocessedEmail, mEditTextPasswordInput.getText().toString(), mEditTextPasswordInput.getText().toString(), new Firebase.ResultHandler() {
+                            @Override
+                            public void onSuccess() {
+                                userRef.child(Constants.FIREBASE_PROPERTY_USER_HAS_LOGGED_IN_WITH_PASSWORD).setValue(true);
+                                        /* The password was changed */
+                                Log.d(LOG_TAG, getString(R.string.log_message_password_changed_successfully) + mEditTextPasswordInput.getText().toString());
+                            }
+
+                            @Override
+                            public void onError(FirebaseError firebaseError) {
+                                Log.d(LOG_TAG, getString(R.string.log_error_failed_to_change_password) + firebaseError);
+                            }
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                Log.e(LOG_TAG,
+                        getString(R.string.log_error_the_read_failed) +
+                                firebaseError.getMessage());
+            }
+        });
+
     }
 
     private void setAuthenticatedUserGoogle(AuthData authData){

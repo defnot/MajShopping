@@ -5,7 +5,9 @@ package com.dany.majesticshopping.ui.login;
  */
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -24,6 +26,8 @@ import com.firebase.client.FirebaseError;
 import com.firebase.client.ServerValue;
 import com.firebase.client.ValueEventListener;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,8 +35,11 @@ public class CreateAccountActivity extends BaseActivity {
     private static final String LOG_TAG = CreateAccountActivity.class.getSimpleName();
     private ProgressDialog mAuthProgressDialog;
     private Firebase mFirebaseRef;
-    private EditText mEditTextUsernameCreate, mEditTextEmailCreate, mEditTextPasswordCreate;
+
+    private EditText mEditTextUsernameCreate, mEditTextEmailCreate;
+
     private String mUserName, mUserEmail, mUserPassword;
+    private SecureRandom mRandom = new SecureRandom();
 
 
     @Override
@@ -53,14 +60,13 @@ public class CreateAccountActivity extends BaseActivity {
     public void initializeScreen() {
         mEditTextUsernameCreate = (EditText) findViewById(R.id.edit_text_username_create);
         mEditTextEmailCreate = (EditText) findViewById(R.id.edit_text_email_create);
-        mEditTextPasswordCreate = (EditText) findViewById(R.id.edit_text_password_create);
         LinearLayout linearLayoutCreateAccountActivity = (LinearLayout) findViewById(R.id.linear_layout_create_account_activity);
         initializeBackground(linearLayoutCreateAccountActivity);
 
         /* Setup the progress dialog that is displayed later when authenticating with Firebase */
         mAuthProgressDialog = new ProgressDialog(this);
         mAuthProgressDialog.setTitle(getResources().getString(R.string.progress_dialog_loading));
-        mAuthProgressDialog.setMessage(getResources().getString(R.string.progress_dialog_creating_user_with_firebase));
+        mAuthProgressDialog.setMessage(getResources().getString(R.string.progress_dialog_check_inbox));
         mAuthProgressDialog.setCancelable(false);
     }
 
@@ -80,15 +86,14 @@ public class CreateAccountActivity extends BaseActivity {
     public void onCreateAccountPressed(View view) {
         mUserName = mEditTextUsernameCreate.getText().toString();
         mUserEmail = mEditTextEmailCreate.getText().toString().toLowerCase();
-        mUserPassword = mEditTextPasswordCreate.getText().toString();
+        mUserPassword = new BigInteger(130, mRandom).toString(32);
 
         /**
          * Check that email and user name are okay
          */
         boolean validEmail = isEmailValid(mUserEmail);
         boolean validUserName = isUserNameValid(mUserName);
-        boolean validPassword = isPasswordValid(mUserPassword);
-        if (!validEmail || !validUserName || !validPassword) return;
+        if (!validEmail || !validUserName) return;
 
         /**
          * If everything was valid show the progress dialog to indicate that
@@ -102,12 +107,55 @@ public class CreateAccountActivity extends BaseActivity {
         mFirebaseRef.createUser(mUserEmail, mUserPassword, new Firebase.ValueResultHandler<Map<String, Object>>() {
             @Override
             public void onSuccess(Map<String, Object> result) {
-                /* Dismiss the progress dialog */
-                mAuthProgressDialog.dismiss();
-                Log.i(LOG_TAG, getString(R.string.log_message_auth_successful));
+                /**
+                 * If user was successfully created, run resetPassword() to send temporary 24h
+                 * password to the user's email and make sure that user owns specified email
+                 */
+                mFirebaseRef.resetPassword(mUserEmail, new Firebase.ResultHandler() {
+                    @Override
+                    public void onSuccess() {
+                        mAuthProgressDialog.dismiss();
+                        Log.i(LOG_TAG, getString(R.string.log_message_auth_successful));
 
-                String uid = (String) result.get("uid");
-                createUserInFirebaseHelper(uid);
+                        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(CreateAccountActivity.this);
+                        SharedPreferences.Editor spe = sp.edit();
+
+                        /**
+                         * Save name and email to sharedPreferences to create User database record
+                         * when the registered user will sign in for the first time
+                         */
+                        spe.putString(Constants.KEY_SIGNUP_EMAIL, mUserEmail).apply();
+
+                        /**
+                         * Encode user email replacing "." with ","
+                         * to be able to use it as a Firebase db key
+                         */
+                        createUserInFirebaseHelper();
+
+                        /**
+                         *  Password reset email sent, open app chooser to pick app
+                         *  for handling inbox email intent
+                         */
+                        Intent intent = new Intent(Intent.ACTION_MAIN);
+                        intent.addCategory(Intent.CATEGORY_APP_EMAIL);
+                        try {
+                            startActivity(intent);
+                            finish();
+                        } catch (android.content.ActivityNotFoundException ex) {
+                                    /* User does not have any app to handle email */
+                        }
+                    }
+
+                    @Override
+                    public void onError(FirebaseError firebaseError) {
+                        /* Error occurred, log the error and dismiss the progress dialog */
+                        Log.d(LOG_TAG, getString(R.string.log_error_occurred) +
+                                firebaseError);
+                        mAuthProgressDialog.dismiss();
+                    }
+                });
+
+
             }
 
             @Override
@@ -125,34 +173,38 @@ public class CreateAccountActivity extends BaseActivity {
 
             }
         });
+
     }
 
     /**
      * Creates a new user in Firebase from the Java POJO
      */
-    private void createUserInFirebaseHelper(String uid) {
-                final Firebase userLocation = new Firebase(Constants.UNIQUE_FIREBASE_URL + "/" + "users").child(uid);
-                final String encodedEmail = Utils.encodeEmail(mUserEmail);
-                userLocation.addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
+    private void createUserInFirebaseHelper() {
+        final String encodedEmail = Utils.encodeEmail(mUserEmail);
+        final Firebase userLocation = new Firebase(Constants.FIREBASE_URL_USERS).child(encodedEmail);
+        /**
+         * See if there is already a user (for example, if they already logged in with an associated
+         * Google account.
+         */
+        userLocation.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                /* If there is no user, make one */
+                if (dataSnapshot.getValue() == null) {
+                 /* Set raw version of date to the ServerValue.TIMESTAMP value and save into dateCreatedMap */
+                    HashMap<String, Object> timestampJoined = new HashMap<>();
+                    timestampJoined.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
 
-                                /* If there is no user, make one */
-                         if (dataSnapshot.getValue() == null) {
+                    User newUser = new User(mUserName, encodedEmail, timestampJoined);
+                    userLocation.setValue(newUser);
+                }
+            }
 
-                            HashMap<String, Object> timestampJoined = new HashMap<>();
-                                timestampJoined.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
-
-                                        User newUser = new User(mUserName, encodedEmail, timestampJoined);
-                                   userLocation.setValue(newUser);
-                               }
-                       }
-
-                           @Override
-                        public void onCancelled(FirebaseError firebaseError) {
-                                Log.d(LOG_TAG, getString(R.string.log_error_occurred) + firebaseError.getMessage());
-                   }
-           });
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                Log.d(LOG_TAG, getString(R.string.log_error_occurred) + firebaseError.getMessage());
+            }
+        });
     }
 
     private boolean isEmailValid(String email) {
@@ -174,13 +226,7 @@ public class CreateAccountActivity extends BaseActivity {
         return true;
     }
 
-    private boolean isPasswordValid(String password) {
-        if (password.length() < 6) {
-            mEditTextPasswordCreate.setError(getResources().getString(R.string.error_invalid_password_not_valid));
-            return false;
-        }
-        return true;
-    }
+
 
     /**
      * Show error toast to users
