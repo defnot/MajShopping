@@ -125,7 +125,12 @@ public class ListItemAdapter extends FirebaseListAdapter<ListItem> {
 
             textViewBoughtBy.setVisibility(View.VISIBLE);
             textViewBoughtByUser.setVisibility(View.VISIBLE);
-            buttonRemoveItem.setVisibility(View.INVISIBLE);
+            if(owner.equals(mEncodedEmail) || (mShoppingList != null && mShoppingList.getOwner().equals(mEncodedEmail))) {
+                buttonRemoveItem.setVisibility(View.VISIBLE);
+            } else {
+                buttonRemoveItem.setVisibility(View.INVISIBLE);
+            }
+
 
             /* Add a strike-through */
             textViewItemName.setPaintFlags(textViewItemName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);

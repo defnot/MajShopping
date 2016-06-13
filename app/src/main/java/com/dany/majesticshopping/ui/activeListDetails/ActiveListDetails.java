@@ -128,11 +128,13 @@ public class ActiveListDetails extends BaseActivity {
                 if(view.getId() != R.id.list_view_footer_empty) {
                     ListItem listItem = mListItemAdapter.getItem(position);
                     if(listItem != null) {
-                        String name = listItem.getName();
-                        String itemId = mListItemAdapter.getRef(position).getKey();
+                        if(listItem.getOwner().equals(mEncodedEmail) && !mShopping && listItem.isBought()) {
+                            String name = listItem.getName();
+                            String itemId = mListItemAdapter.getRef(position).getKey();
 
-                        showEditListItemNameDialog(name, itemId);
-                        return true;
+                            showEditListItemNameDialog(name, itemId);
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -159,8 +161,10 @@ public class ActiveListDetails extends BaseActivity {
                                 updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, true);
                                 updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, mEncodedEmail);
                             } else {
-                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
-                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
+                                if(selectedListItem.getBoughtBy().equals(mEncodedEmail)) {
+                                    updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
+                                    updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
+                                }
                             }
 
                             /* Do update */
