@@ -24,6 +24,7 @@ public final class Constants {
     public static final String FIREBASE_PROPERTY_LIST_NAME = "listName";
     public static final String FIREBASE_PROPERTY_USER_HAS_LOGGED_IN_WITH_PASSWORD = "hasLoggedInWithPassword";
     public static final String FIREBASE_PROPERTY_EMAIL = "email";
+    public static final String FIREBASE_LOCATION_SHOPPING_LIST_ITEMS = "shoppingListItems";
 
     public static final String KEY_LIST_NAME = "LIST_NAME";
     public static final String KEY_LAYOUT_RESOURCE = "LAYOUT_RESOURCE";
@@ -33,6 +34,10 @@ public final class Constants {
     public static final String LIST_ITEMS_LOCATION_URL = UNIQUE_FIREBASE_URL + "/" + LIST_ITEMS_LOCATION;
     public static final String FIREBASE_URL_USERS = UNIQUE_FIREBASE_URL + "/" + "users";
 
+    public static final String FIREBASE_PROPERTY_BOUGHT = "bought";
+    public static final String FIREBASE_PROPERTY_BOUGHT_BY = "boughtBy";
+
+    public static final String FIREBASE_URL_SHOPPING_LIST_ITEMS = UNIQUE_FIREBASE_URL + "/" + FIREBASE_LOCATION_SHOPPING_LIST_ITEMS;
 
 
 

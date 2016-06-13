@@ -22,6 +22,8 @@ import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 import com.dany.majesticshopping.model.ListItem;
 
+import java.util.HashMap;
+
 /**
  * Created by Dany on 5/19/2016.
  */
@@ -52,7 +54,7 @@ public class ActiveListDetails extends BaseActivity {
         initializeScreen();
 
         mListItemAdapter = new ListItemAdapter(this, ListItem.class,
-                R.layout.single_active_list_item, listItemsRef, mListId);
+                R.layout.single_active_list_item, listItemsRef, mListId,mEncodedEmail);
         mListView.setAdapter(mListItemAdapter);
 
         mActiveListRefListener = mListRef.addValueEventListener(new ValueEventListener() {
@@ -98,7 +100,48 @@ public class ActiveListDetails extends BaseActivity {
                 return false;
             }
         });
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                /* Check that the view is not the empty footer item */
+                if (view.getId() != R.id.list_view_footer_empty) {
+                    final ListItem selectedListItem = mListItemAdapter.getItem(position);
+                    String itemId = mListItemAdapter.getRef(position).getKey();
+
+                    if (selectedListItem != null) {
+
+                            /* Create map and fill it in with deep path multi write operations list */
+                        HashMap<String, Object> updatedItemBoughtData = new HashMap<String, Object>();
+
+                            /* Buy selected item if it is NOT already bought */
+                        if (!selectedListItem.isBought()) {
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, true);
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, mEncodedEmail);
+                        } else {
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
+                        }
+
+                            /* Do update */
+                        Firebase firebaseItemLocation = new Firebase(Constants.FIREBASE_URL_SHOPPING_LIST_ITEMS)
+                                .child(mListId).child(itemId);
+                        firebaseItemLocation.updateChildren(updatedItemBoughtData, new Firebase.CompletionListener() {
+                            @Override
+                            public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+                                if (firebaseError != null) {
+                                    Log.d(LOG_TAG, getString(R.string.log_error_updating_data) +
+                                            firebaseError.getMessage());
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
