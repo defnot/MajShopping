@@ -12,6 +12,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.support.v7.widget.Toolbar;
+import android.widget.TextView;
 
 import com.dany.majesticshopping.R;
 import com.dany.majesticshopping.model.User;
@@ -25,6 +26,7 @@ import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 import com.dany.majesticshopping.model.ListItem;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -32,6 +34,7 @@ import java.util.HashMap;
  */
 public class ActiveListDetails extends BaseActivity {
     private ListView mListView;
+    private TextView mTextViewPeopleShopping;
     private MajesticShoppingList mShoppingList;
     private ListItemAdapter mListItemAdapter;
     private Firebase mListRef, mCurrentUserRef;
@@ -240,6 +243,7 @@ public class ActiveListDetails extends BaseActivity {
 
     private void initializeScreen() {
         mListView = (ListView) findViewById(R.id.list_view_shopping_list_items);
+        mTextViewPeopleShopping = (TextView) findViewById(R.id.text_view_people_shopping);
         Toolbar toolbar = (Toolbar) findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -248,7 +252,73 @@ public class ActiveListDetails extends BaseActivity {
         View footer = getLayoutInflater().inflate(R.layout.footer_empty, null);
         mListView.addFooterView(footer);
     }
+    private void setWhosShoppingText(HashMap<String, User> usersShopping) {
 
+        if (usersShopping != null) {
+            ArrayList<String> usersWhoAreNotYou = new ArrayList<>();
+            /**
+             * If at least one user is shopping
+             * Add userName to the list of users shopping if this user is not current user
+             */
+            for (User user : usersShopping.values()) {
+                if (user != null && !(user.getEmail().equals(mEncodedEmail))) {
+                    usersWhoAreNotYou.add(user.getName());
+                }
+            }
+
+            int numberOfUsersShopping = usersShopping.size();
+            String usersShoppingText;
+
+            /*Check three cases
+            * If only you are shopping
+            * If you and one other are shopping
+            * If you and two or more others are shopping
+            * */
+            if (mShopping) {
+                switch (numberOfUsersShopping) {
+                    case 1:
+                        usersShoppingText = getString(R.string.text_you_are_shopping);
+                        break;
+                    case 2:
+                        usersShoppingText = String.format(
+                                getString(R.string.text_you_and_other_are_shopping),
+                                usersWhoAreNotYou.get(0));
+                        break;
+                    default:
+                        usersShoppingText = String.format(
+                                getString(R.string.text_you_and_number_are_shopping),
+                                usersWhoAreNotYou.size());
+                }
+            /*If you are not shopping, check three cases again
+            * If one other user is shopping
+            * If two users are shopping
+            * If two or more users are shopping
+            * */
+            } else {
+                switch (numberOfUsersShopping) {
+                    case 1:
+                        usersShoppingText = String.format(
+                                getString(R.string.text_other_is_shopping),
+                                usersWhoAreNotYou.get(0));
+                        break;
+                    case 2:
+                        usersShoppingText = String.format(
+                                getString(R.string.text_other_and_other_are_shopping),
+                                usersWhoAreNotYou.get(0),
+                                usersWhoAreNotYou.get(1));
+                        break;
+                    default:
+                        usersShoppingText = String.format(
+                                getString(R.string.text_other_and_number_are_shopping),
+                                usersWhoAreNotYou.get(0),
+                                usersWhoAreNotYou.size() - 1);
+                }
+            }
+            mTextViewPeopleShopping.setText(usersShoppingText);
+        } else {
+            mTextViewPeopleShopping.setText("");
+        }
+    }
 
     public void archiveList() {
     }
@@ -288,6 +358,7 @@ public class ActiveListDetails extends BaseActivity {
         } else {
             usersShoppingRef.setValue(mCurrentUser);
         }
+
 
     }
 
