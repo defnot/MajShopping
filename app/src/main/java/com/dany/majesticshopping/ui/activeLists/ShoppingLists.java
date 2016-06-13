@@ -21,15 +21,17 @@ import com.firebase.client.Firebase;
  * Created by Dany on 5/17/2016.
  */
 public class ShoppingLists extends Fragment {
+    private String mEncodedEmail;
     private ListView mListView;
     private ActiveListAdapter mListsAdapter;
     public ShoppingLists() {
         /* Required empty public constructor */
     }
 
-    public static ShoppingLists newInstance() {
+    public static ShoppingLists newInstance(String encodedEmail) {
         ShoppingLists fragment = new ShoppingLists();
         Bundle args = new Bundle();
+        args.putString(Constants.KEY_ENCODED_EMAIL, encodedEmail);
         fragment.setArguments(args);
         return fragment;
     }
@@ -44,6 +46,7 @@ public class ShoppingLists extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            mEncodedEmail = getArguments().getString(Constants.KEY_ENCODED_EMAIL);
         }
     }
 
@@ -57,7 +60,7 @@ public class ShoppingLists extends Fragment {
         Firebase listsReference = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL);
 
         mListsAdapter = new ActiveListAdapter(getActivity(), MajesticShoppingList.class,
-                R.layout.single_active_list, listsReference);
+                R.layout.single_active_list, listsReference, mEncodedEmail);
 
         mListView.setAdapter(mListsAdapter);
 
