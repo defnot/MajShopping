@@ -13,6 +13,7 @@ public class MajesticShoppingList {
     private String owner;
     private HashMap<String, Object> timestampLastChanged;
     private HashMap<String, Object> timestampCreated;
+    private HashMap<String, User> usersShopping;
 
     public MajesticShoppingList() {
     }
@@ -23,6 +24,7 @@ public class MajesticShoppingList {
         HashMap<String, Object> timestampLastChangedObj = new HashMap<String, Object>();
         timestampLastChangedObj.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
         this.timestampLastChanged = timestampLastChangedObj;
+        this.usersShopping = new HashMap<>();
     }
 
     public MajesticShoppingList(String listName, String owner, HashMap<String, Object> timestampCreated) {
@@ -63,5 +65,9 @@ public class MajesticShoppingList {
     @JsonIgnore
     public long getTimestampCreatedLong() {
         return (long) timestampLastChanged.get(Constants.FIREBASE_PROPERTY_TIMESTAMP);
+    }
+
+    public HashMap getUsersShopping() {
+        return usersShopping;
     }
 }

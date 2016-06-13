@@ -3,15 +3,18 @@ package com.dany.majesticshopping.ui.activeListDetails;
 import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ListView;
 import android.support.v7.widget.Toolbar;
 
 import com.dany.majesticshopping.R;
+import com.dany.majesticshopping.model.User;
 import com.dany.majesticshopping.ui.BaseActivity;
 import com.dany.majesticshopping.utils.Constants;
 import com.dany.majesticshopping.model.MajesticShoppingList;
@@ -31,10 +34,13 @@ public class ActiveListDetails extends BaseActivity {
     private ListView mListView;
     private MajesticShoppingList mShoppingList;
     private ListItemAdapter mListItemAdapter;
-    private Firebase mListRef;
+    private Firebase mListRef, mCurrentUserRef;
+    private Button mButtonShopping;
     private String mListId;
     private boolean mCurrentUserIsOwner = false;
-    private ValueEventListener mActiveListRefListener;
+    private ValueEventListener mActiveListRefListener, mCurrentUserRefListener;
+    private User mCurrentUser;
+    private boolean mShopping = false;
     private static final String LOG_TAG = ActiveListDetails.class.getSimpleName();
 
     @Override
@@ -49,6 +55,7 @@ public class ActiveListDetails extends BaseActivity {
             return;
         }
         mListRef = new Firebase(Constants.ACTIVE_LISTS_LOCATION_RENAME_URL).child(mListId);
+        mCurrentUserRef = new Firebase(Constants.FIREBASE_URL_USERS).child(mEncodedEmail);
         Firebase listItemsRef = new Firebase(Constants.LIST_ITEMS_LOCATION_URL).child(mListId);
 
         initializeScreen();
@@ -57,6 +64,22 @@ public class ActiveListDetails extends BaseActivity {
                 R.layout.single_active_list_item, listItemsRef, mListId,mEncodedEmail);
         mListView.setAdapter(mListItemAdapter);
 
+        mCurrentUserRefListener = mCurrentUserRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                User user = dataSnapshot.getValue(User.class);
+                if(user != null) {
+                    mCurrentUser = user;
+                } else {
+                    finish();
+                }
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                Log.e("an error occured", firebaseError.getMessage());
+            }
+        });
         mActiveListRefListener = mListRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -72,8 +95,20 @@ public class ActiveListDetails extends BaseActivity {
 
                 invalidateOptionsMenu();
                 setTitle(shoppingList.getListName());
-            }
 
+                HashMap<String, User> usersShopping = mShoppingList.getUsersShopping();
+                if (usersShopping != null && usersShopping.size() != 0 &&
+                        usersShopping.containsKey(mEncodedEmail)) {
+                    mShopping = true;
+                    mButtonShopping.setText(getString(R.string.button_stop_shopping));
+                    mButtonShopping.setBackgroundColor(ContextCompat.getColor(ActiveListDetails.this, R.color.dark_grey));
+                } else {
+                    mButtonShopping.setText(getString(R.string.button_start_shopping));
+                    mButtonShopping.setBackgroundColor(ContextCompat.getColor(ActiveListDetails.this, R.color.primary_dark));
+                    mShopping = false;
+                }
+
+            }
             @Override
             public void onCancelled(FirebaseError firebaseError) {
                 Log.e("op mop", getString(R.string.log_error_the_read_failed) + firebaseError.getMessage());
@@ -110,31 +145,34 @@ public class ActiveListDetails extends BaseActivity {
                     String itemId = mListItemAdapter.getRef(position).getKey();
 
                     if (selectedListItem != null) {
+                        /* If current user is shopping */
+                        if (mShopping) {
 
                             /* Create map and fill it in with deep path multi write operations list */
-                        HashMap<String, Object> updatedItemBoughtData = new HashMap<String, Object>();
+                            HashMap<String, Object> updatedItemBoughtData = new HashMap<String, Object>();
 
                             /* Buy selected item if it is NOT already bought */
-                        if (!selectedListItem.isBought()) {
-                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, true);
-                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, mEncodedEmail);
-                        } else {
-                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
-                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
-                        }
+                            if (!selectedListItem.isBought()) {
+                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, true);
+                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, mEncodedEmail);
+                            } else {
+                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
+                                updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
+                            }
 
                             /* Do update */
-                        Firebase firebaseItemLocation = new Firebase(Constants.FIREBASE_URL_SHOPPING_LIST_ITEMS)
-                                .child(mListId).child(itemId);
-                        firebaseItemLocation.updateChildren(updatedItemBoughtData, new Firebase.CompletionListener() {
-                            @Override
-                            public void onComplete(FirebaseError firebaseError, Firebase firebase) {
-                                if (firebaseError != null) {
-                                    Log.d(LOG_TAG, getString(R.string.log_error_updating_data) +
-                                            firebaseError.getMessage());
+                            Firebase firebaseItemLocation = new Firebase(Constants.FIREBASE_URL_SHOPPING_LIST_ITEMS)
+                                    .child(mListId).child(itemId);
+                            firebaseItemLocation.updateChildren(updatedItemBoughtData, new Firebase.CompletionListener() {
+                                @Override
+                                public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+                                    if (firebaseError != null) {
+                                        Log.d(LOG_TAG, getString(R.string.log_error_updating_data) +
+                                                firebaseError.getMessage());
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
             }
@@ -197,6 +235,7 @@ public class ActiveListDetails extends BaseActivity {
         super.onDestroy();
         mListItemAdapter.cleanup();
         mListRef.removeEventListener(mActiveListRefListener);
+        mCurrentUserRef.removeEventListener(mCurrentUserRefListener);
     }
 
     private void initializeScreen() {
@@ -238,6 +277,17 @@ public class ActiveListDetails extends BaseActivity {
     }
 
     public void toggleShopping(View view) {
+
+        Firebase usersShoppingRef = new Firebase(Constants.FIREBASE_URL_ACTIVE_LISTS)
+                .child(mListId).child(Constants.FIREBASE_PROPERTY_USERS_SHOPPING)
+                .child(mEncodedEmail);
+
+        /* Either add or remove the current user from the usersShopping map */
+        if (mShopping) {
+            usersShoppingRef.removeValue();
+        } else {
+            usersShoppingRef.setValue(mCurrentUser);
+        }
 
     }
 

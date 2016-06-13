@@ -54,7 +54,7 @@ public class ListItemAdapter extends FirebaseListAdapter<ListItem> {
 
         String owner = item.getOwner();
 
-        textViewItemName.setText(item.getItemName());
+        textViewItemName.setText(item.getName());
 
 
         setItemAppearanceBaseOnBoughtStatus(owner, textViewBoughtByUser, textViewBoughtBy, buttonRemoveItem,
