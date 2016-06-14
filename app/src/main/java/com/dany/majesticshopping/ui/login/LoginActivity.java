@@ -53,7 +53,12 @@ public class LoginActivity extends BaseActivity {
     private ProgressDialog mAuthProgressDialog;
     private EditText mEditTextEmailInput, mEditTextPasswordInput;
 
+    private SharedPreferences mSharedPref;
+    private SharedPreferences.Editor mSharedPrefEditor;
+
     private Firebase mFirebaseRef;
+
+    private Firebase.AuthStateListener mAuthStateListener;
 
     private boolean mGoogleIntentInProgress;
 
@@ -65,6 +70,8 @@ public class LoginActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        mSharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        mSharedPrefEditor = mSharedPref.edit();
 
         mFirebaseRef = new Firebase(Constants.UNIQUE_FIREBASE_URL);
         /**
@@ -91,13 +98,30 @@ public class LoginActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor spe = sp.edit();
+        mAuthStateListener = new Firebase.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(AuthData authData) {
+                mAuthProgressDialog.dismiss();
+
+                /**
+                 * If there is a valid session to be restored, start MainActivity.
+                 * No need to pass data via SharedPreferences because app
+                 * already holds userName/provider data from the latest session
+                 */
+                if (authData != null) {
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                }
+            }
+        };
+        mFirebaseRef.addAuthStateListener(mAuthStateListener);
 
         /**
          * Get the newly registered user email if present, use null as default value
          */
-        String signupEmail = sp.getString(Constants.KEY_SIGNUP_EMAIL, null);
+        String signupEmail = mSharedPref.getString(Constants.KEY_SIGNUP_EMAIL, null);
 
         /**
          * Fill in the email editText and remove value from SharedPreferences if email is present
@@ -108,13 +132,14 @@ public class LoginActivity extends BaseActivity {
             /**
              * Clear signupEmail sharedPreferences to make sure that they are used just once
              */
-            spe.putString(Constants.KEY_SIGNUP_EMAIL, null).apply();
+            mSharedPrefEditor.putString(Constants.KEY_SIGNUP_EMAIL, null).apply();
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        mFirebaseRef.removeAuthStateListener(mAuthListener);
     }
 
     /**
@@ -198,13 +223,7 @@ public class LoginActivity extends BaseActivity {
             mAuthProgressDialog.dismiss();
             Log.i(LOG_TAG, provider + " " + getString(R.string.log_message_auth_successful));
 
-            if (authData.getProvider().equals("google")) {
-                /**
-                 * If google api client is connected, get the lowerCase user email
-                 * and save in sharedPreferences
-                 */
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                SharedPreferences.Editor spe = sp.edit();
+            if (authData != null) {
 
                 if(authData.getProvider().equals("password")) {
                     setAuthenticatedUserPasswordProvider(authData);
@@ -215,8 +234,8 @@ public class LoginActivity extends BaseActivity {
                     else {
                         Log.e(LOG_TAG, getString(R.string.log_error_invalid_provider) + authData.getProvider());
                     }
-                    spe.putString(Constants.KEY_PROVIDER, authData.getProvider()).apply();
-                    spe.putString(Constants.KEY_ENCODED_EMAIL, mEncodedEmail).apply();
+                    mSharedPrefEditor.putString(Constants.KEY_PROVIDER, authData.getProvider()).apply();
+                    mSharedPrefEditor.putString(Constants.KEY_ENCODED_EMAIL, mEncodedEmail).apply();
 
 
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -317,14 +336,14 @@ public class LoginActivity extends BaseActivity {
         String unprocessedEmail;
         if (mGoogleApiClient.isConnected()) {
             unprocessedEmail = mGoogleAccount.getEmail().toLowerCase();
-            spe.putString(Constants.KEY_GOOGLE_EMAIL, unprocessedEmail).apply();
+            mSharedPrefEditor.putString(Constants.KEY_GOOGLE_EMAIL, unprocessedEmail).apply();
         } else {
 
             /**
              * Otherwise get email from sharedPreferences, use null as default value
              * (this mean that user resumes his session)
              */
-            unprocessedEmail = sp.getString(Constants.KEY_GOOGLE_EMAIL, null);
+            unprocessedEmail = mSharedPref.getString(Constants.KEY_GOOGLE_EMAIL, null)
         }
         /**
          * Encode user email replacing "." with "," to be able to use it
